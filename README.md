@@ -1,4 +1,4 @@
-# 📝 Defold CSV to Lua Table EditorScript
+# 📝 CSV to Lua Table Defold EditorScript
 
 This EditorScript allows you to **convert CSV files into Lua tables** directly inside the [Defold game engine](https://defold.com) editor.
 
@@ -9,6 +9,7 @@ It supports both **keyed tables** and **array tables**, and is useful for import
 ## ✨ Features
 
 - ✅ Convert `.csv` files to Lua tables
+- ✅ The first column of the CSV (key) can be used as the table key in the Lua output.
 - ✅ Choose output format via dialog:
   - **Keyed table**: `id = { ... }`
   - **Array table**: `{ {...}, {...} }`
@@ -21,68 +22,84 @@ It supports both **keyed tables** and **array tables**, and is useful for import
 
 ## 📦 Installation
 
-1. Copy `csv_to_lua.lua` into your project, e.g.:
-/main/editor_scripts/csv_to_lua.lua
+1. Copy `csv2lua.editor_script` into your project, e.g.:
+/main/editor_scripts/csv2lua.editor_script
 
-go
-コピーする
-編集する
+2. Project > Reload Editor Scripts
 
-2. Add it to your `game.project` file:
-```ini
-[editor]
-scripts = /main/editor_scripts/csv_to_lua.lua
-Restart the Defold Editor (if already open)
+## 🚀 Usage
+1. **Right-click** any .csv file in the **Assets panel**
 
-🚀 Usage
-Right-click any .csv file in the Assets panel
+2. Choose **“Convert CSV to Lua Table”** from the context menu.
 
-Choose “Convert CSV to Lua Table”
+3. A dialog will appear asking:
+   > *"Use first column as keys?"*
+   - Click **"Use"** to generate a keyed Lua table (e.g. `id = {...}`)
+   - Click **"No"** to generate an array-based table (e.g. `{ {...}, {...} }`)
+4. A `.lua` file will be generated **alongside the CSV** with the converted content.
 
-A dialog will appear asking if you want to use the first column as the key
+## 🧪 Example
+**Example CSV(first column "key"):**
 
-A .lua file will be generated alongside the CSV
-
-🧪 Example
-CSV:
-bash
-コピーする
-編集する
+```csv
 key,type,hp
 slime,small,10
 goblin,medium,20
-Output (keyed):
-lua
-コピーする
-編集する
+```
+
+**Output (keyed):**
+
+```lua
 return {
   slime = { type = "small", hp = 10 },
   goblin = { type = "medium", hp = 20 },
 }
-Output (array):
-lua
-コピーする
-編集する
+```
+
+**Output (array):**
+
+```lua
 return {
-  { key = "slime", type = "small", hp = 10 },
-  { key = "goblin", type = "medium", hp = 20 },
+  slime = { "small", 10 },
+  goblin = { "medium", 20 },
 }
-🛠 Special Behavior
-Columns with header names starting with @ (e.g. @note) are ignored
+```
+**Example CSV(first column "not key"):**
 
-Columns named @script can contain raw Lua functions, which are injected without quotes:
+```csv
+id,type,hp
+slime,small,10
+goblin,medium,20
+```
 
-lua
-コピーする
-編集する
-function() return 1 end
-Links in the form of (https://...) are stripped from CSV fields, making it Notion-compatible
+**Output (keyed):**
 
-🤝 License
-MIT License
+```lua
+return {
+  { id = "slime",type = "small", hp = 10 },
+  { id = "goblin", type = "medium", hp = 20 },
+}
+```
 
-🙌 Contributions
-Feel free to submit pull requests or open issues for improvements, bugs, or suggestions!
+**Output (array):**
 
-🔗 Related
-Defold Editor Scripts Documentation
+```lua
+return {
+  {"slime", "small", 10 },
+  {"goblin", "medium", 20 },
+}
+```
+## 🔧 Limitations
+
+* **Embedded functions** must be unquoted in the CSV (e.g., `function(...) ... end`).
+* Only **`@script` columns** are allowed to contain raw Lua code.
+* `function(...)` blocks must be **complete and balanced** (i.e., no syntax errors).
+
+## 📄 License
+
+CC0 1.0 Universal
+
+## 🔗 Related Links
+
+* [Defold Editor Scripts Documentation](https://defold.com/manuals/editor-scripts/)
+* [Notion](https://www.notion.so/)
