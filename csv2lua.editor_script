@@ -123,11 +123,9 @@ local function convert_csv_to_lua(path, use_keys)
     for i, h in ipairs(headers) do
         local h_trim = trim(h)
         if h_trim:sub(1, 1) == "@" then
-            if h_trim == "@script" then
-                script_indices[i] = true
-            else
-                skip_indices[i] = true
-            end
+            skip_indices[i] = true
+        elseif h_trim == "script" then
+            script_indices[i] = true
         end
     end
 
