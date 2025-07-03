@@ -102,4 +102,3 @@ CC0 1.0 Universal
 ## 🔗 Related Links
 
 * [Defold Editor Scripts Documentation](https://defold.com/manuals/editor-scripts/)
-* [Notion](https://www.notion.so/)
