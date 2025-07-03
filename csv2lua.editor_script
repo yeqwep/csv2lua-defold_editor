@@ -1,0 +1,230 @@
+-- -- ----------------------------------------------
+-- -- CSV → Lua table converter
+-- -- ----------------------------------------------
+local M = {}
+-- -- ----------------------------------------------
+-- Utilities
+-- -- ----------------------------------------------
+
+local function trim(s)
+    return s:match("^%s*(.-)%s*$")
+end
+
+local function ends_with(str, suffix)
+    return str:sub(-#suffix) == suffix
+end
+
+local function remove_utf8bom(text)
+    local utf8_bom = string.char(0xEF, 0xBB, 0xBF)
+    if text:sub(1, 3) == utf8_bom then
+        return text:sub(4)
+    end
+    return text
+end
+
+local function parse_csv_line(line)
+    local res = {}
+    local in_quotes = false
+    local field = ""
+    local i = 1
+    while i <= #line do
+        local c = line:sub(i, i)
+        if c == '"' then
+            if line:sub(i+1, i+1) == '"' then
+                field = field .. '"'
+                i = i + 1
+            else
+                in_quotes = not in_quotes
+            end
+        elseif c == ',' and not in_quotes then
+            table.insert(res, field)
+            field = ""
+        else
+            field = field .. c
+        end
+        i = i + 1
+    end
+    table.insert(res, field)
+    return res
+end
+
+local function read_csv_lines(path)
+    local f = io.open("." .. path, "r")
+    if not f then return {} end
+    local content = f:read("*a")
+    f:close()
+    content = remove_utf8bom(content)
+
+    local lines = {}
+    local buffer = ""
+    for line in content:gmatch("([^\r\n]*)\r?\n?") do
+        if line ~= "" or buffer ~= "" then
+            buffer = buffer ~= "" and (buffer .. "\n" .. line) or line
+            local quote_count = select(2, buffer:gsub('"', ""))
+            if quote_count % 2 == 0 then
+                table.insert(lines, buffer)
+                buffer = ""
+            end
+        end
+    end
+    if buffer ~= "" then
+        table.insert(lines, buffer)
+    end
+    return lines
+end
+
+local function parse_value(s, is_script_column)
+    s = trim(s)
+    if s == "" then
+        return "nil"
+    elseif tonumber(s) then
+        return s
+    elseif s:find("[\r\n,]") then
+        local values = {}
+        for item in s:gmatch("([^\r\n,]+)") do
+            item = trim(item)
+            if is_script_column and item:match("^function.*end$") then
+                table.insert(values, item)
+            else
+                local only = item:match("^%((.-)%)$")
+                if only then
+                    if only:sub(1, 6) ~= "https:" then
+                        table.insert(values, '"' .. item .. '"')
+                    end
+                elseif item ~= "" then
+                    table.insert(values, '"' .. item .. '"')
+                end
+            end
+        end
+        if #values == 0 then return "nil" end
+        return "{" .. table.concat(values, ", ") .. "}"
+    else
+        if is_script_column and s:match("^function.*end$") then
+            return s
+        else
+            return '"' .. s .. '"'
+        end
+    end
+end
+
+-- -- ----------------------------------------------
+-- Main Functions
+-- -- ----------------------------------------------
+local function convert_csv_to_lua(path, use_keys)
+    local lines = read_csv_lines(path)
+    if #lines < 2 then
+        return false, "CSV must have header and at least one row"
+    end
+
+    local headers = parse_csv_line(lines[1])
+    local skip_indices = {}
+    local script_indices = {}
+
+    for i, h in ipairs(headers) do
+        local h_trim = trim(h)
+        if h_trim:sub(1, 1) == "@" then
+            if h_trim == "@script" then
+                script_indices[i] = true
+            else
+                skip_indices[i] = true
+            end
+        end
+    end
+
+    local has_key = trim(headers[1]) == "key"
+    local output = { "return {" }
+
+    for i = 2, #lines do
+        local row = parse_csv_line(lines[i])
+        local line_parts = {}
+        local key = nil
+        local start_col = 1
+
+        if has_key then
+            key = trim(row[1])
+            start_col = 2
+        end
+
+        for j = start_col, #headers do
+            if not skip_indices[j] then
+                local name = ""
+                if use_keys then
+                    name = trim(headers[j]) .. " = "
+                end
+                local val = row[j] and parse_value(row[j], script_indices[j]) or "nil"
+                table.insert(line_parts, name .. val)
+            end
+        end
+
+        if has_key and key then
+            table.insert(output, "  " .. key .. " = { " .. table.concat(line_parts, ", ") .. " },")
+        else
+            table.insert(output, "  { " .. table.concat(line_parts, ", ") .. " },")
+        end
+    end
+
+    table.insert(output, "}")
+    local result = table.concat(output, "\n")
+
+    local lua_path = "." .. path:gsub("%.csv$", ".lua")
+    local lua_file = io.open(lua_path, "w")
+    if not lua_file then
+        return false, "Failed to write output file: " .. lua_path
+    end
+    lua_file:write(result)
+    lua_file:close()
+
+    return true, lua_path
+end
+
+function M.get_commands()
+    return {
+        {
+            label = "Convert CSV to Lua Table",
+            locations = {"Assets"},
+            active = function(opts)
+                for _, id in pairs(opts.selection) do
+                    local path = editor.get(id, "path")
+                    if ends_with(path, ".csv") then
+                        return true
+                    end
+                end
+                return false
+            end,
+            query = {
+                selection = {type = "resource", cardinality = "many"}
+            },
+            run = function(opts)
+                local result = editor.ui.show_dialog(editor.ui.dialog({
+                    title = "Use first column as keys?",
+                    buttons = {
+                        editor.ui.dialog_button({
+                            text = "Use",
+                            default = true,
+                            result = true
+                        }),
+                        editor.ui.dialog_button({
+                            text = "No",
+                            cancel = true,
+                            result = false
+                        })
+                    }
+                }))
+                print('Use first column as keys:', result)
+                for _, id in pairs(opts.selection) do
+                    local path = editor.get(id, "path")
+                    if ends_with(path, ".csv") then
+                        local ok, result = convert_csv_to_lua(path,result)
+                        if ok then
+                            print("CSV converted: " .. result)
+                        else
+                            print("Error: " .. result)
+                        end
+                    end
+                end
+            end,
+        }
+    }
+end
+
+return M
