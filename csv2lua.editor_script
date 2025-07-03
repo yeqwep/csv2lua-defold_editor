@@ -203,7 +203,7 @@ function M.get_commands()
             },
             run = function(opts)
                 local result = editor.ui.show_dialog(editor.ui.dialog({
-                    title = "Use first column as keys?",
+                    title = "Use column as keys?",
                     buttons = {
                         editor.ui.dialog_button({
                             text = "Use",
@@ -217,7 +217,7 @@ function M.get_commands()
                         })
                     }
                 }))
-                print('Use first column as keys:', result)
+                print('Use column as keys:', result)
                 for _, id in pairs(opts.selection) do
                     local path = editor.get(id, "path")
                     if ends_with(path, ".csv") then

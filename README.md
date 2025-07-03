@@ -33,7 +33,7 @@ It supports both **keyed tables** and **array tables**, and is useful for import
 2. Choose **“Convert CSV to Lua Table”** from the context menu.
 
 3. A dialog will appear asking:
-   > *"Use first column as keys?"*
+   > *"Use column as keys?"*
    - Click **"Use"** to generate a keyed Lua table (e.g. `id = {...}`)
    - Click **"No"** to generate an array-based table (e.g. `{ {...}, {...} }`)
 4. A `.lua` file will be generated **alongside the CSV** with the converted content.
