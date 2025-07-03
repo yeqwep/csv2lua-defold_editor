@@ -23,7 +23,7 @@ It supports both **keyed tables** and **array tables**, and is useful for import
 ## 📦 Installation
 
 1. Copy `csv2lua.editor_script` into your project, e.g.:
-/main/editor_scripts/csv2lua.editor_script
+/editor_scripts/csv2lua.editor_script
 
 2. Project > Reload Editor Scripts
 
