@@ -73,25 +73,31 @@ local function read_csv_lines(path)
     return lines
 end
 
-local function parse_value(s, is_script_column)
+local function remove_urls(s)
+    while s:find("%b()") do
+        s = s:gsub("%b()", function(captured)
+            if captured:match("^%(%s*https?://") then
+                return ""
+            end
+            return captured
+        end)
+        s = trim(s)
+    end
+    return s
+end
+
+local function parse_value(s)
     s = trim(s)
     if s == "" then
         return "nil"
     elseif tonumber(s) then
         return s
     elseif s:find("[\r\n,]") then
+        s = remove_urls(s)
         local values = {}
         for item in s:gmatch("([^\r\n,]+)") do
             item = trim(item)
-            while item:find("%b()") do
-                item = item:gsub("%b()", function(captured)
-                    if captured:match("^%(%s*https?://") then
-                        return ""
-                    end
-                    return captured
-                end)
-                item = trim(item)
-            end
+            item = remove_urls(item)
             if item ~= "" then
                 table.insert(values, '"' .. item .. '"')
             end
@@ -99,20 +105,8 @@ local function parse_value(s, is_script_column)
         if #values == 0 then return "nil" end
         return "{" .. table.concat(values, ", ") .. "}"
     else
-        while s:find("%b()") do
-            s = s:gsub("%b()", function(captured)
-                if captured:match("^%(%s*https?://") then
-                    return ""
-                end
-                return captured
-            end)
-            s = trim(s)
-        end
-        if is_script_column and s:match("^function.*end$") then
-            return s
-        else
-            return '"' .. s .. '"'
-        end
+        s = remove_urls(s)
+        return '"' .. s .. '"'
     end
 end
 
@@ -127,14 +121,11 @@ local function convert_csv_to_lua(path, use_keys)
 
     local headers = parse_csv_line(lines[1])
     local skip_indices = {}
-    local script_indices = {}
 
     for i, h in ipairs(headers) do
         local h_trim = trim(h)
         if h_trim:sub(1, 1) == "@" then
             skip_indices[i] = true
-        elseif h_trim == "script" then
-            script_indices[i] = true
         end
     end
 
@@ -158,7 +149,7 @@ local function convert_csv_to_lua(path, use_keys)
                 if use_keys then
                     name = trim(headers[j]) .. " = "
                 end
-                local val = row[j] and parse_value(row[j], script_indices[j]) or "nil"
+                local val = row[j] and parse_value(row[j]) or "nil"
                 table.insert(line_parts, name .. val)
             end
         end
