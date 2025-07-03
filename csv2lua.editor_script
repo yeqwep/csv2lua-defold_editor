@@ -83,22 +83,31 @@ local function parse_value(s, is_script_column)
         local values = {}
         for item in s:gmatch("([^\r\n,]+)") do
             item = trim(item)
-            if is_script_column and item:match("^function.*end$") then
-                table.insert(values, item)
-            else
-                local only = item:match("^%((.-)%)$")
-                if only then
-                    if only:sub(1, 6) ~= "https:" then
-                        table.insert(values, '"' .. item .. '"')
+            while item:find("%b()") do
+                item = item:gsub("%b()", function(captured)
+                    if captured:match("^%(%s*https?://") then
+                        return ""
                     end
-                elseif item ~= "" then
-                    table.insert(values, '"' .. item .. '"')
-                end
+                    return captured
+                end)
+                item = trim(item)
+            end
+            if item ~= "" then
+                table.insert(values, '"' .. item .. '"')
             end
         end
         if #values == 0 then return "nil" end
         return "{" .. table.concat(values, ", ") .. "}"
     else
+        while s:find("%b()") do
+            s = s:gsub("%b()", function(captured)
+                if captured:match("^%(%s*https?://") then
+                    return ""
+                end
+                return captured
+            end)
+            s = trim(s)
+        end
         if is_script_column and s:match("^function.*end$") then
             return s
         else
