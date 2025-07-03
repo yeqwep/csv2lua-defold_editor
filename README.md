@@ -13,9 +13,9 @@ It supports both **keyed tables** and **array tables**, and is useful for import
 - ✅ Choose output format via dialog:
   - **Keyed table**: `id = { ... }`
   - **Array table**: `{ {...}, {...} }`
-- ✅ Ignores metadata columns using `@` prefix (`@note`, `@script`, etc.)
+- ✅ Ignores metadata columns using `@` prefix (`@note`, etc.)
 - ✅ Supports multiline CSV fields
-- ✅ Supports embedded Lua functions (in `@script` columns)
+- ✅ Supports embedded Lua functions (in `script` columns)
 - ✅ Automatically strips Notion-style `(https://...)` references
 
 ---
@@ -92,7 +92,7 @@ return {
 ## 🔧 Limitations
 
 * **Embedded functions** must be unquoted in the CSV (e.g., `function(...) ... end`).
-* Only **`@script` columns** are allowed to contain raw Lua code.
+* Only **`script` columns** are allowed to contain raw Lua code.
 * `function(...)` blocks must be **complete and balanced** (i.e., no syntax errors).
 
 ## 📄 License
