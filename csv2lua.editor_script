@@ -74,6 +74,7 @@ local function read_csv_lines(path)
 end
 
 local function remove_urls(s)
+    local original = s
     while s:find("%b()") do
         s = s:gsub("%b()", function(captured)
             if captured:match("^%(%s*https?://") then
@@ -83,7 +84,7 @@ local function remove_urls(s)
         end)
         s = trim(s)
     end
-    return s
+    return s, s ~= original
 end
 
 local function parse_value(s)
@@ -105,8 +106,12 @@ local function parse_value(s)
         if #values == 0 then return "nil" end
         return "{" .. table.concat(values, ", ") .. "}"
     else
-        s = remove_urls(s)
-        return '"' .. s .. '"'
+        s,had_url = remove_urls(s)
+        local result = '"' .. s .. '"'
+        if had_url then
+            result = '{"' .. s .. '"}'
+        end
+        return result
     end
 end
 
