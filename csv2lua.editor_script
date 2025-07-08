@@ -91,27 +91,40 @@ local function parse_value(s)
     s = trim(s)
     if s == "" then
         return "nil"
-    elseif tonumber(s) then
-        return s
     elseif s:find("[\r\n,]") then
         s = remove_urls(s)
-        local values = {}
+        local raw_items = {}
+        local all_numbers = true
         for item in s:gmatch("([^\r\n,]+)") do
             item = trim(item)
             item = remove_urls(item)
             if item ~= "" then
+                table.insert(raw_items, item)
+                if not tonumber(item) then
+                    all_numbers = false
+                end
+            end
+        end
+        if #raw_items == 0 then return "{}" end
+        local values = {}
+        for _, item in ipairs(raw_items) do
+            if all_numbers then
+                table.insert(values, item)
+            else
                 table.insert(values, '"' .. item .. '"')
             end
         end
-        if #values == 0 then return "nil" end
         return "{" .. table.concat(values, ", ") .. "}"
     else
         s,had_url = remove_urls(s)
-        local result = '"' .. s .. '"'
-        if had_url then
-            result = '{"' .. s .. '"}'
+        local item = s
+        if not tonumber(s) then
+            item = '"' .. s .. '"'
         end
-        return result
+        if had_url then
+            item = '{' .. item .. '}'
+        end
+        return item
     end
 end
 
