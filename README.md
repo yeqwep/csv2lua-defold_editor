@@ -24,9 +24,7 @@ buffs_name,buffs_value
 "atk_up",5
 ```
 ```lua
-return {
-  buffs = { name = "atk_up", value = 5 },
-}
+buffs = { name = "atk_up", value = 5 },
 ```
 ---
 
