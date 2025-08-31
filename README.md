@@ -27,6 +27,7 @@ buffs_name,buffs_value
 return {
   buffs = { name = "atk_up", value = 5 },
 }
+```
 ---
 
 ## 📦 Installation
