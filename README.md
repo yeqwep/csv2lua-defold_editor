@@ -26,7 +26,7 @@ It supports both **keyed tables** and **array tables**, and is useful for import
 
    Lua output:
    buffs = {
-       { name = "atk_up", value = 5 }
+      name = "atk_up", value = 5
    }
 
 ---
