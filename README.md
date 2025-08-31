@@ -16,6 +16,18 @@ It supports both **keyed tables** and **array tables**, and is useful for import
 - ✅ Ignores metadata columns using `@` prefix (`@note`, etc.)
 - ✅ Supports multiline CSV fields
 - ✅ Automatically strips Notion-style `(https://...)` references
+- ✅ Supports boolean values (`true` / `false`) correctly as Lua booleans
+- ✅ Supports deep nested tables by combining related columns.
+  - For example, CSV columns like `buffs_name` and `buffs_value` are converted into a nested Lua table:
+
+   CSV:
+   buffs_name,buffs_value
+   "atk_up",5
+
+   Lua output:
+   buffs = {
+       { name = "atk_up", value = 5 }
+   }
 
 ---
 
